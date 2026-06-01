@@ -1,0 +1,2 @@
+# exFAT drive doesn't support symlinks — packages must be copied from the uv cache
+link-mode = "copy"
