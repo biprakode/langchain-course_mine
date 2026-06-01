@@ -1,3 +1,5 @@
+from typing import List
+
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain.tools import tool
@@ -37,15 +39,34 @@ def clean_search(query: str) -> str:
     # Simply pass the string query directly to the Tavily client run method
     return tavily_search.run(query)
 
+
+class Source(BaseModel):
+    """Schema for source used by agent"""
+    url: str = Field(description="Source URL")
+
+class AgentResponse(BaseModel):
+    """Schema for agent response with answer and sources"""
+    answer: str = Field(description="Agent's answer to query")
+    source: List[Source] = Field(default_factory=list ,  description="Source of query")
+
 llm = ChatGroq(model="llama-3.1-8b-instant")
 tools = [clean_search]
 
 
-agent = create_agent(model = llm, tools = tools)
+agent = create_agent(model = llm, tools = tools , response_format=AgentResponse)
 
 result = agent.invoke({
     "messages": [
-        HumanMessage(content="Who is most likely to win F1 WDC 2026??")
+        HumanMessage(content="Find me the best restaurant in park street kolkata, india")
     ]
 })
-print(result["messages"][-1].content)
+print(result)
+
+structured_data = result["structured_response"]
+
+print("--- ANSWER ---")
+print(structured_data.answer)
+print("\n--- SOURCES ---")
+
+for source in structured_data.source:
+    print(source.url)
