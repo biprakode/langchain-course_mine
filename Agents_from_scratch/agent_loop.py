@@ -5,9 +5,8 @@ from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 from langchain_core.messages import HumanMessage , AIMessage , SystemMessage , ToolMessage
 from langsmith import traceable
-from langchain_groq import ChatGroq
 
-MODEL="llama-3.3-70b-versatile"
+MODEL="gemma4:e2b"
 MAX_ITERATIONS = 10
 
 @tool
@@ -91,8 +90,7 @@ def run_agent(question : str):
     tools = [get_product_price , apply_discount]
     tools_dict = {t.name : t for t in tools}
 
-    #llm = init_chat_model(f"ollama:{MODEL}" , temperature = 0)
-    llm = ChatGroq(model=MODEL, temperature=0)
+    llm = init_chat_model(f"ollama:{MODEL}" , temperature = 0)
     llm_with_tools = llm.bind_tools(tools)
 
     print("Question: " + question)
