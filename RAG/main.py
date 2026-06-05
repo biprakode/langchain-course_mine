@@ -1,5 +1,10 @@
+from operator import itemgetter
+
 import dotenv
+from langchain_classic.chains.summarize.map_reduce_prompt import prompt_template
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
 from langchain_groq import ChatGroq
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -38,7 +43,7 @@ vector_store.add_documents(texts)
 
 retriever = vector_store.as_retriever(
     search_type="mmr", search_kwargs={"k": 6,
-                                      "fetch_k": 20,       # <-- CRITICAL: Increases the initial pool to filter from
+                                      "fetch_k": 20,
                                       "lambda_mult": 0.25}
 )
 
@@ -85,6 +90,15 @@ def retrieval_chain_without_lcel(query: str):
 
     return response.content
 
+
+def retrieval_chain_with_lcel():
+    retrieval_chain = (
+            RunnablePassthrough.assign(
+                context = itemgetter[str]("question") | retriever | format_docs
+            )
+            | rag_prompt | llm | StrOutputParser)
+    return retrieval_chain
+
 questions = [
     "What is Charles Leclerc's date of birth?",
     "In which year did Leclerc win the GP3 Series championship?",
@@ -100,5 +114,14 @@ questions = [
     "What year did Leclerc join the Ferrari Driver Academy?",
 ]
 
+# for q in questions:
+#     retrieval_chain_without_lcel(q)
+
+retrieval_chain = retrieval_chain_with_lcel()
 for q in questions:
-    retrieval_chain_without_lcel(q)
+    print("\n" + "="*40 + " RAG SYSTEM OUTPUT " + "="*40)
+    print(f"User Query: '{q}'\n")
+    print("-"*99)
+    response = retrieval_chain.invoke({"question": q})
+    print(f"Response:\n{response.content}")
+    print("="*99 + "\n")
